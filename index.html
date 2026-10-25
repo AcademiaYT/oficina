@@ -528,7 +528,16 @@ try{
 const TOPIC="ofi-d50056-live-7kq2",BASE="https://ntfy.sh/"+TOPIC;
 const MAP={};let ult=0;
 function ing(m){try{if(m.event&&m.event!=="message")return;const d=JSON.parse(m.message);if(!d.id)return;const p=MAP[d.id];if(p&&p._t>m.time)return;d._t=m.time;MAP[d.id]=d;ult=Math.max(ult,m.time);}catch(e){}}
-function pintar(){docs=Object.values(MAP).sort((x,y)=>(x.orden||0)-(y.orden||0));render();banner();}
+
+function resumen(){let r=document.getElementById('resumen');if(!r){r=document.createElement('div');r.id='resumen';r.style.cssText='margin:56px auto 8px;max-width:1200px;padding:10px 14px;font:14px sans-serif;color:#e8eef5;background:rgba(10,16,28,.92);border-radius:10px';const e=document.querySelector('.escena');(e&&e.parentNode?e.parentNode:document.body).insertBefore(r,e||document.body.firstChild)}
+const ahora=Date.now()/1000,pr=docs.filter(d=>d.zona==='produccion');const lis=pr.filter(d=>d.estado==='listo').length;const med=pr.length?Math.round(pr.reduce((a,d)=>a+(+d.progreso||0),0)/pr.length):0;
+const col={trabajando:'#2dd4bf',esperando:'#fbbf24',listo:'#4ade80',bloqueado:'#f87171'};
+let h='<div style="font-weight:700;margin-bottom:6px">Hoy: '+lis+'/'+pr.length+' vídeos listos · progreso medio '+med+'%</div>';
+pr.forEach(d=>{const p=Math.max(0,Math.min(100,+d.progreso||0)),a=d._t?Math.round(ahora-d._t):null;const v=a===null?'':(a<90?a+' s':Math.round(a/60)+' min');const viejo=a!==null&&a>600;
+h+='<div style="display:flex;align-items:center;gap:8px;margin:3px 0;flex-wrap:wrap"><span style="width:110px;font-weight:600">'+(d.nombre||d.id)+'</span><span style="width:84px;color:'+(col[d.estado]||'#aaa')+'">'+(d.estado||'')+'</span><span style="flex:1;min-width:140px;height:10px;background:#26324a;border-radius:6px;overflow:hidden"><i style="display:block;height:100%;width:'+p+'%;background:'+(col[d.estado]||'#38bdf8')+'"></i></span><b style="width:42px;text-align:right">'+p+'%</b><span style="width:70px;opacity:.8">'+(d.fase||'')+'</span><span style="flex:2;min-width:160px;opacity:.9">'+(d.tarea||'')+'</span><span style="width:64px;text-align:right;color:'+(viejo?'#f87171':'#7e8aa5')+'">'+(v?'hace '+v:'')+(viejo?' ⚠':'')+'</span></div>'});
+r.innerHTML=h}
+function pintar(){docs=Object.values(MAP).sort((x,y)=>(x.orden||0)-(y.orden||0));render();banner();resumen();}
+setInterval(()=>{if(docs.length)resumen()},5000);
 function banner(){let b=document.getElementById('alerta');if(!b){b=document.createElement('div');b.id='alerta';b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9;padding:10px 16px;background:#d92d20;color:#fff;font:700 18px sans-serif;text-align:center;display:none';document.body.appendChild(b)}
 const x=docs.filter(d=>d.decision);if(x.length){b.style.display='block';b.textContent='⚠ DECISIÓN NECESARIA — '+x.map(d=>(d.nombre||d.id)+': '+d.decision).join('  |  ')}else b.style.display='none';
 const f=document.querySelector('footer');if(f&&f.firstChild){const t=f.firstChild.textContent.replace(/^(X |En vivo[^.]*\. |Esperando datos… )/,'');f.firstChild.textContent=(ult?'En vivo · último dato '+new Date(ult*1000).toLocaleTimeString('es-ES',{timeZone:'Europe/Madrid',hour:'2-digit',minute:'2-digit',second:'2-digit'})+' (Madrid). ':'Esperando datos… ')+t;}}
